@@ -26,8 +26,8 @@ const client = new MongoClient(process.env.URI, {
 async function run() {
     try {
         // database collection
-
         const allData = client.db('assignment-12').collection('allData')
+        const trandingData = client.db('assignment-12').collection('TrandingData')
 
         await client.connect();
         app.get('/', async (req, res) => {
@@ -35,16 +35,32 @@ async function run() {
         })
         // allData
         app.get('/data', async(req, res) => {
-            const cursor = allData.find();
+            const search = req.query.search || '';
+            const page = Number(req.query.page) || 1
+            const limit = Number(req.query.limit) || 6
+            console.log(search,page);
+            const query={
+                tags:{ $regex: new RegExp(search, 'i') }
+            }
+            const cursor = allData.find(query).sort({ date: -1, star: 1 });
+            const result = await cursor.toArray();
+            res.send(result)
+        })
+        app.get('/trandingData', async(req, res) => {
+            const cursor = trandingData.find();
             const result = await cursor.toArray();
             res.send(result)
         })
 
-        // Send a ping to confirm a successful connection
+        app.get('/details/:id',async(req,res)=>{
+            const id=req.params.id;
+            const query={_id: new ObjectId(id)}
+            const result=await allData.findOne(query);
+            res.send(result)
+        })
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
-        // Ensures that the client will close when you finish/error
     }
 }
 run().catch(console.dir);
