@@ -33,29 +33,36 @@ async function run() {
         app.get('/', async (req, res) => {
             res.send('hello')
         })
-        // allData
-        app.get('/data', async(req, res) => {
-            const search = req.query.search || '';
-            const page = Number(req.query.page) || 1
-            const limit = Number(req.query.limit) || 6
-            console.log(search,page);
-            const query={
-                tags:{ $regex: new RegExp(search, 'i') }
-            }
-            const cursor = allData.find(query).sort({ date: -1, star: 1 });
+        // allData only for feature and trandig section
+        app.get('/data', async (req, res) => {
+
+            const cursor = allData.find().sort({ date: -1, star: 1 });
             const result = await cursor.toArray();
             res.send(result)
         })
-        app.get('/trandingData', async(req, res) => {
+        // data for all product with pagination
+        app.get('/allProduct', async (req, res) => {
+            const search = req.query.search || '';
+            const page = Number(req.query.page) || 0
+            const limit = Number(req.query.limit) || 6
+            console.log(search, page, limit);
+            const query = {
+                tags: { $regex: new RegExp(search, 'i') }
+            }
+            const cursor = allData.find(query).skip(page * limit).limit(limit);
+            const result = await cursor.toArray();
+            res.send(result)
+        })
+        app.get('/trandingData', async (req, res) => {
             const cursor = trandingData.find();
             const result = await cursor.toArray();
             res.send(result)
         })
 
-        app.get('/details/:id',async(req,res)=>{
-            const id=req.params.id;
-            const query={_id: new ObjectId(id)}
-            const result=await allData.findOne(query);
+        app.get('/details/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await allData.findOne(query);
             res.send(result)
         })
         await client.db("admin").command({ ping: 1 });
