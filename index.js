@@ -49,9 +49,10 @@ async function run() {
             const query = {
                 tags: { $regex: new RegExp(search, 'i') }
             }
-            const cursor = allData.find(query).skip(page * limit).limit(limit);
-            const result = await cursor.toArray();
-            res.send(result)
+            const cursor = allData.find(query);
+            const totalItems = await cursor.count(); // Get the total count of matching items
+            const result = await cursor.skip(page * limit).limit(limit).toArray();
+            res.send({ totalItems, result });
         })
         app.get('/trandingData', async (req, res) => {
             const cursor = trandingData.find();
