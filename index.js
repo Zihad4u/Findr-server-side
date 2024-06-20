@@ -28,10 +28,11 @@ async function run() {
         // database collection
         const allData = client.db('assignment-12').collection('allData')
         const trandingData = client.db('assignment-12').collection('TrandingData')
+        const review = client.db('assignment-12').collection('Reviews')
 
         await client.connect();
         app.get('/', async (req, res) => {
-            res.send('hello')
+            res.send('assignment-12 running....')
         })
         // allData only for feature and trandig section
         app.get('/data', async (req, res) => {
@@ -40,6 +41,8 @@ async function run() {
             const result = await cursor.toArray();
             res.send(result)
         })
+        // try to do upvote
+
         // data for all product with pagination
         app.get('/allProduct', async (req, res) => {
             const search = req.query.search || '';
@@ -54,18 +57,29 @@ async function run() {
             const result = await cursor.skip(page * limit).limit(limit).toArray();
             res.send({ totalItems, result });
         })
-        app.get('/trandingData', async (req, res) => {
-            const cursor = trandingData.find();
-            const result = await cursor.toArray();
-            res.send(result)
-        })
-
         app.get('/details/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await allData.findOne(query);
             res.send(result)
         })
+
+        // review
+        app.post('/addReview', async (req, res) => {
+            const { reviewStar, message, displayName, email, _id } = req.body;
+            // Check if a review with the same _id and email exists
+            const query={email:email}
+            const existingReview = await review.findOne(query);
+            if (!existingReview) {
+                const result = await review.insertOne({ reviewStar, message, displayName, email, _id });
+                res.send(result)
+            }
+            else{
+                res.send('You already add review on this product')
+            }
+
+        });
+
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
