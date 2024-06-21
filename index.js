@@ -66,19 +66,21 @@ async function run() {
 
         // review
         app.post('/addReview', async (req, res) => {
-            const { reviewStar, message, displayName, email, _id } = req.body;
-            // Check if a review with the same _id and email exists
-            const query={email:email}
-            const existingReview = await review.findOne(query);
-            if (!existingReview) {
-                const result = await review.insertOne({ reviewStar, message, displayName, email, _id });
-                res.send(result)
+            const reviewData = req.body;
+            try {
+                const result = await review.insertOne(reviewData);
+                res.status(201).send(result);
+            } catch (error) {
+                console.error('Error adding review:', error);
+                res.status(500).send({ message: 'An unexpected error occurred' });
             }
-            else{
-                res.send('You already add review on this product')
-            }
-
         });
+        app.get('/reviewData/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { id: id };
+            const reviews = await review.find(query).toArray();
+            res.send(reviews);
+        })
 
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
