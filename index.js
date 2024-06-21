@@ -48,22 +48,31 @@ async function run() {
             const search = req.query.search || '';
             const page = Number(req.query.page) || 0
             const limit = Number(req.query.limit) || 6
-            console.log(search, page, limit);
+            // console.log(search, page, limit);
             const query = {
-                tags: { $regex: new RegExp(search, 'i') }
+                tags: { $regex: new RegExp(search, 'i') },
+                status: { $ne: 'Pending' }
             }
             const cursor = allData.find(query);
             const totalItems = await cursor.count(); // Get the total count of matching items
             const result = await cursor.skip(page * limit).limit(limit).toArray();
             res.send({ totalItems, result });
         })
+        // details page
         app.get('/details/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await allData.findOne(query);
             res.send(result)
         })
-
+        // my product 
+        app.get('/myProduct/:gmail', async (req, res) => {
+            const gmail = req.params.gmail;
+            // console.log(gmail)
+            const query = { email: gmail };
+            const result = await allData.find(query).toArray();
+            res.send(result)
+        })
         // review
         app.post('/addReview', async (req, res) => {
             const reviewData = req.body;
@@ -75,6 +84,38 @@ async function run() {
                 res.status(500).send({ message: 'An unexpected error occurred' });
             }
         });
+        // update the data
+        app.put('/updateProduct/:id', async (req, res) => {
+            const id = req.params.id;
+            const { image, name, tags, description,externalLinks } = req.body;
+            const query = { _id: new ObjectId(id) };
+            const update = {
+                $set: {
+                    image: image,
+                    name: name,
+                    tags: tags,
+                    description: description,
+                    externalLinks:externalLinks
+                }
+            }
+            const result = await allData.updateOne(query, update);
+            res.send(result)
+        })
+
+        app.post('/addMyProduct', async (req, res) => {
+            const data = req.body;
+            const result = await allData.insertOne(data);
+            res.send(result);
+        })
+        // handle delete
+        app.delete('/delete/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id)
+            const query = { _id: new ObjectId(id) }
+            const result = await allData.deleteOne(query);
+            res.send(result);
+        })
+
         app.get('/reviewData/:id', async (req, res) => {
             const id = req.params.id;
             const query = { id: id };
