@@ -30,6 +30,7 @@ async function run() {
         const trandingData = client.db('assignment-12').collection('TrandingData')
         const review = client.db('assignment-12').collection('Reviews')
         const user = client.db('assignment-12').collection('User')
+        const Report = client.db('assignment-12').collection('Report')
 
         await client.connect();
         app.get('/', async (req, res) => {
@@ -38,10 +39,7 @@ async function run() {
         // allData only for feature and trandig section
         app.get('/data', async (req, res) => {
 
-            const cursor = allData.find().sort({
-                date: -1,     // Latest date first
-                star: 1       // Lowest star rating first 
-            });
+            const cursor = allData.find().sort({ date: -1 });
             const result = await cursor.toArray();
             res.send(result)
         })
@@ -151,6 +149,30 @@ async function run() {
             const result = await allData.updateOne(query, update)
             res.send(result)
         })
+        // make admin
+        app.patch('/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }; // Corrected syntax error here
+            const update = {
+                $set: {
+                    role: "Admin"
+                }
+            };
+            const result = await user.updateOne(query, update)
+            res.send(result)
+        })
+        // make Moderator
+        app.patch('/Moderator/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }; // Corrected syntax error here
+            const update = {
+                $set: {
+                    role: "Moderator"
+                }
+            };
+            const result = await user.updateOne(query, update)
+            res.send(result)
+        })
         app.post('/addMyProduct', async (req, res) => {
             const data = req.body;
             const result = await allData.insertOne(data);
@@ -192,6 +214,39 @@ async function run() {
             const result = await user.findOne(query);
             res.send(result)
         })
+        app.get('/getUser', async (req, res) => {
+            const result = await user.find().toArray();
+            res.send(result)
+        })
+        // report
+        app.post('/report', async (req, res) => {
+            const reviewData = req.body;
+            const result = await Report.insertOne(reviewData);
+            res.send(result);
+        });
+        // report data
+        app.get('/reportData/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { id: id };
+            const reviews = await Report.find(query).toArray();
+            res.send(reviews);
+        })
+        app.get('/reportData', async (req, res) => {
+            const reviews = await Report.find().toArray();
+            res.send(reviews);
+        })
+        // deleter report product
+        app.delete('/deleteReport/:id', async (req, res) => {
+            const id = req.params.id;
+            const _id = req.query._id
+            const query = { _id: new ObjectId(id) }
+            const query2 = { _id: new ObjectId(_id) }
+            const result = await allData.deleteOne(query);
+            const del = await Report.deleteOne(query2)
+            res.send(result);
+        })
+
+
         // get all data including pending
         // app.get('/getAllDataWithPending',async(req,res)=>{
         //     const 
