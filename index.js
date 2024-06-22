@@ -38,11 +38,36 @@ async function run() {
         // allData only for feature and trandig section
         app.get('/data', async (req, res) => {
 
-            const cursor = allData.find().sort({ date: -1, star: 1 });
+            const cursor = allData.find().sort({
+                date: -1,     // Latest date first
+                star: 1       // Lowest star rating first 
+            });
             const result = await cursor.toArray();
             res.send(result)
         })
-        // try to do upvote
+        app.get('/dsaboard/data', async (req, res) => {
+
+            const sortOrder = {
+                "Pending": 1,
+                "Accepted": 2,
+                "Rejected": 3 // Assuming other statuses like "Rejected"
+            };
+
+            // Add a custom field for sorting purposes
+            const cursor = allData.aggregate([
+                {
+                    $addFields: {
+                        sortOrder: { $cond: { if: { $eq: ["$status", "Pending"] }, then: 1, else: 2 } }
+                    }
+                },
+                { $sort: { sortOrder: 1 } }, // Sort by the custom sortOrder field
+                { $project: { sortOrder: 0 } } // Remove the custom sortOrder field from the result
+            ]);
+
+            const result = await cursor.toArray();
+            res.send(result);
+        })
+
 
         // data for all product with pagination
         app.get('/allProduct', async (req, res) => {
@@ -102,7 +127,30 @@ async function run() {
             const result = await allData.updateOne(query, update);
             res.send(result)
         })
-
+        // update  accept the product
+        app.patch('/accpetProduct/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }; // Corrected syntax error here
+            const update = {
+                $set: {
+                    status: "Accepted"
+                }
+            };
+            const result = await allData.updateOne(query, update)
+            res.send(result)
+        })
+        // make feature
+        app.patch('/feature/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }; // Corrected syntax error here
+            const update = {
+                $set: {
+                    status: "feature"
+                }
+            };
+            const result = await allData.updateOne(query, update)
+            res.send(result)
+        })
         app.post('/addMyProduct', async (req, res) => {
             const data = req.body;
             const result = await allData.insertOne(data);
@@ -127,7 +175,7 @@ async function run() {
         // post user
         app.post('/addUser', async (req, res) => {
             const { email, displayName } = req.body;
-            const data=req.body;
+            const data = req.body;
             const query = { email: email };
             const existingUser = await user.findOne(query);
             if (existingUser) {
@@ -138,12 +186,16 @@ async function run() {
         })
 
         // get user
-        app.get('/getUser/:email',async(req,res)=>{
-            const email=req.params.email;
-            const query={email :email};
-            const result=await user.findOne(query);
+        app.get('/getUser/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const result = await user.findOne(query);
             res.send(result)
         })
+        // get all data including pending
+        // app.get('/getAllDataWithPending',async(req,res)=>{
+        //     const 
+        // })
 
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
