@@ -29,6 +29,7 @@ async function run() {
         const allData = client.db('assignment-12').collection('allData')
         const trandingData = client.db('assignment-12').collection('TrandingData')
         const review = client.db('assignment-12').collection('Reviews')
+        const user = client.db('assignment-12').collection('User')
 
         await client.connect();
         app.get('/', async (req, res) => {
@@ -87,7 +88,7 @@ async function run() {
         // update the data
         app.put('/updateProduct/:id', async (req, res) => {
             const id = req.params.id;
-            const { image, name, tags, description,externalLinks } = req.body;
+            const { image, name, tags, description, externalLinks } = req.body;
             const query = { _id: new ObjectId(id) };
             const update = {
                 $set: {
@@ -95,7 +96,7 @@ async function run() {
                     name: name,
                     tags: tags,
                     description: description,
-                    externalLinks:externalLinks
+                    externalLinks: externalLinks
                 }
             }
             const result = await allData.updateOne(query, update);
@@ -121,6 +122,27 @@ async function run() {
             const query = { id: id };
             const reviews = await review.find(query).toArray();
             res.send(reviews);
+        })
+
+        // post user
+        app.post('/addUser', async (req, res) => {
+            const { email, displayName } = req.body;
+            const data=req.body;
+            const query = { email: email };
+            const existingUser = await user.findOne(query);
+            if (existingUser) {
+                return res.send({ message: 'User with this email already exists' });
+            }
+            const result = await user.insertOne(data);
+            res.send(result)
+        })
+
+        // get user
+        app.get('/getUser/:email',async(req,res)=>{
+            const email=req.params.email;
+            const query={email :email};
+            const result=await user.findOne(query);
+            res.send(result)
         })
 
         await client.db("admin").command({ ping: 1 });
